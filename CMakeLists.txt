@@ -14,11 +14,23 @@ find_package(RobotLibrary REQUIRED)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
+####################################################################################################
 add_executable(urdf_test src/urdf_test.cpp)
 target_link_libraries(urdf_test PRIVATE RobotLibrary::RobotLibrary)
 
+####################################################################################################
 add_executable(spline_test src/spline_test.cpp)
 target_link_libraries(spline_test PRIVATE RobotLibrary::RobotLibrary)
 
 add_executable(trapezoidal_test src/trapezoidal_test.cpp)
 target_link_libraries(trapezoidal_test PRIVATE RobotLibrary::RobotLibrary)
+
+####################################################################################################
+add_executable(joint_velocity_control_test src/joint_velocity_control_test.cpp)
+target_link_libraries(joint_velocity_control_test PRIVATE RobotLibrary::RobotLibrary)
+
+add_executable(cartesian_velocity_control_test src/cartesian_velocity_control_test.cpp)
+target_link_libraries(cartesian_velocity_control_test PRIVATE RobotLibrary::RobotLibrary)
+
+add_executable(singularity_start_test src/singularity_start_test.cpp)
+target_link_libraries(singularity_start_test PRIVATE RobotLibrary::RobotLibrary)

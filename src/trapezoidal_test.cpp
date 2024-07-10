@@ -37,7 +37,6 @@ int main(int argc, char* argv[])
 	{
 	    points.push_back(Eigen::VectorXd::Random(1));                                               // Random intermediate point
     }
-    
     points.push_back(Eigen::VectorXd::Ones(1));                                                     // End at one
 		
 	try
@@ -72,7 +71,6 @@ int main(int argc, char* argv[])
             }
         }
         file.close();                                                                               // As it says on the label
-	
 	}
 	catch(const std::exception &exception)
 	{
