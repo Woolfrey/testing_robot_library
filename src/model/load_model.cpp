@@ -1,6 +1,6 @@
 #include <iostream>                                                                                 // std::cerr, std::cout
 #include <fstream> 
-#include <RobotLibrary/Model/KinematicTree.h>                                                       // Custom class for robot physics
+#include <RobotLibrary/KinematicTree.h>                                                       // Custom class for robot physics
 #include <time.h>                                                                                   // Timer
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 
     try
     {
-        KinematicTree<float> model(pathToURDF);                                                   
+        KinematicTree model(pathToURDF);                                                   
 
         int numJoints = model.number_of_joints();
 
@@ -30,8 +30,8 @@ int main(int argc, char **argv)
 
         srand((unsigned int) time(0));					                                            // Random seed generator
 
-        Eigen::VectorXf q    = Eigen::VectorXf::Random(numJoints);
-        Eigen::VectorXf qdot = Eigen::VectorXf::Random(numJoints);
+        Eigen::VectorXd q    = Eigen::VectorXd::Random(numJoints);
+        Eigen::VectorXd qdot = Eigen::VectorXd::Random(numJoints);
 
         if(not model.update_state(q, qdot))
         {
@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 
         timer = clock() - timer;                                                                    // Difference from the start
 
-        float time = (float)timer/CLOCKS_PER_SEC;                                                   // Convert
+        double time = (double)timer/CLOCKS_PER_SEC;                                                 // Convert
 
         std::cout << "\nIt took " << time*1000 << " milliseconds (" << 1/time << " Hz) "
                   << "to compute the inverse dynamics.\n";

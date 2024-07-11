@@ -8,7 +8,7 @@
 #include <fstream>  
 #include <iostream>                                                                                 // std::cerr, std::cout
 #include <time.h>
-#include <RobotLibrary/Trajectory/SplineTrajectory.h>                                               // We want to test this
+#include <RobotLibrary/SplineTrajectory.h>                                               // We want to test this
 #include <string>
  
   ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
     unsigned int numberOfWaypoints = std::stoi(argv[1]);                                            // As it says
     unsigned int order = std::stoi(argv[2]);                                                        // Polynomial order
 
-    std::vector<State<double>> trajectoryPoints(numberOfWaypoints);
+    std::vector<State> trajectoryPoints(numberOfWaypoints);
     
     // Start at zero
     trajectoryPoints.front() = { Eigen::VectorXd::Zero(1),
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
     // Sample equispaced points in time along the trajectory
     try
     {
-        SplineTrajectory<double> trajectory(trajectoryPoints, times, order);                        // Create the trajectory
+        SplineTrajectory trajectory(trajectoryPoints, times, order);                                // Create the trajectory
         
         double hertz = 100;
         

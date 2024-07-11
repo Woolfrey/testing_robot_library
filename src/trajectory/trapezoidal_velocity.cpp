@@ -7,7 +7,7 @@
  
 #include <fstream>
 #include <iostream>                                                                                 // std::cerr, std::cout
-#include <RobotLibrary/Trajectory/TrapezoidalVelocity.h>                                            // We want to test this
+#include <RobotLibrary/TrapezoidalVelocity.h>                                                       // We want to test this
 #include <string>
  
   ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     srand(time(NULL));                                                                              // Seed the random number generator
 	
 	// Set up the points for the spline
-	std::vector<Eigen::Vector<double,Eigen::Dynamic>> points;
+	std::vector<Eigen::VectorXd> points;
 	points.push_back(Eigen::VectorXd::Zero(1));                                                     // Start at zero
 	
 	for(int i = 0; i < n-1; i++)
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 		
 	try
 	{
-		TrapezoidalVelocity<double> trajectory(points,maxVel,maxAcc,0);
+		TrapezoidalVelocity trajectory(points,maxVel,maxAcc,0);
 
 		double hertz = 20.0;
 		

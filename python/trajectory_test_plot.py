@@ -11,7 +11,7 @@ import matplotlib.pyplot                         # For plotting data
 
 ########## Load the data from file ##############
 path = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                    "../../build/trajectory_test_data.csv"))
+                                    "../build/trajectory_test_data.csv"))
 
 data = pandas.read_csv(path,header=None)
 
