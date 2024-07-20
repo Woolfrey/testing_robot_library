@@ -8,7 +8,7 @@
 #include <fstream>  
 #include <iostream>                                                                                 // std::cerr, std::cout
 #include <time.h>
-#include <RobotLibrary/SplineTrajectory.h>                                               // We want to test this
+#include <RobotLibrary/SplineTrajectory.h>                                                          // We want to test this
 #include <string>
  
   ////////////////////////////////////////////////////////////////////////////////////////////////////
