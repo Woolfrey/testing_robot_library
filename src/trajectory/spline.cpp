@@ -62,11 +62,14 @@ int main(int argc, char* argv[])
             positions[i] = trajectoryPoints[i].position(0);
         }
         
-        std::vector<double> derivatives = solve_cubic_spline_derivatives(positions, times);
-        
-        for(int i = 0; i < numberOfWaypoints; i++)
+        if(numberOfWaypoints > 2)
         {
-            trajectoryPoints[i].velocity(0) = derivatives[i];
+            std::vector<double> derivatives = solve_cubic_spline_derivatives(positions, times);
+            
+            for(int i = 0; i < numberOfWaypoints; i++)
+            {
+                trajectoryPoints[i].velocity(0) = derivatives[i];
+            }
         }
     } 
     
