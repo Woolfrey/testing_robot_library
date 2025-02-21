@@ -7,7 +7,7 @@
  
 #include <fstream>
 #include <iostream>                                                                                 // std::cerr, std::cout
-#include <RobotLibrary/TrapezoidalVelocity.h>                                                       // We want to test this
+#include <RobotLibrary/Trajectory/TrapezoidalVelocity.h>                                            // We want to test this
 #include <string>
  
   ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 		
 	try
 	{
-		TrapezoidalVelocity trajectory(points,maxVel,maxAcc,0);
+		RobotLibrary::Trajectory::TrapezoidalVelocity trajectory(points,maxVel,maxAcc,0);
 
 		double hertz = 20.0;
 		

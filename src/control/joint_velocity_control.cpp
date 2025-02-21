@@ -8,8 +8,8 @@
 #include <Eigen/Core>                                                                               // Eigen::Vector, Eigen::Matrix classes
 #include <fstream>                                                                                  // Reading and writing to files
 #include <iostream>                                                                                 // std::cout, std::cerr
-#include <RobotLibrary/SerialKinematicControl.h>                                                    // Custom control class
-#include <RobotLibrary/SplineTrajectory.h>                                                          // Custom trajectory generator
+#include <RobotLibrary/Control/SerialKinematicControl.h>                                            // Custom control class
+#include <RobotLibrary/Trajectory/SplineTrajectory.h>                                               // Custom trajectory generator
 #include <time.h>
 
 // Parameters for the numerical simulation
@@ -38,15 +38,15 @@ int main(int argc, char** argv)
     srand(time(NULL));                                                                              // Seed the random number generator	
 
     // Set up the controller
-    KinematicTree model(argv[1]);                                                                   // Create the model from urdf
+    RobotLibrary::Model::KinematicTree model(argv[1]);                                              // Create the model from urdf
 
-    SerialKinematicControl controller(&model, argv[2]);                                             // Create controller for given endpoint
+    RobotLibrary::Control::SerialKinematicControl controller(&model, argv[2]);                      // Create controller for given endpoint
 
     unsigned int n = model.number_of_joints();
 
     // Set up the trajectory
 
-    std::vector<State> waypoints;
+    std::vector<RobotLibrary::Trajectory::State> waypoints;
 
     waypoints.push_back({ Eigen::VectorXd::Random(n),                                               // Position
                           Eigen::VectorXd::Zero(n),                                                 // Velocity
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
                              
     std::vector<double> times = {startTime, endTime};                               
 
-    SplineTrajectory trajectory(waypoints,times,polynomialOrder);
+    RobotLibrary::Trajectory::SplineTrajectory trajectory(waypoints,times,polynomialOrder);
 
     unsigned int m = simulationSteps/ratio;
 

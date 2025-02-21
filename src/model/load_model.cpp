@@ -1,6 +1,6 @@
 #include <iostream>                                                                                 // std::cerr, std::cout
 #include <fstream> 
-#include <RobotLibrary/KinematicTree.h>                                                       // Custom class for robot physics
+#include <RobotLibrary/Model/KinematicTree.h>                                                       // Custom class for robot physics
 #include <time.h>                                                                                   // Timer
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -17,11 +17,11 @@ int main(int argc, char **argv)
     }
 
     std::string pathToURDF = argv[1];
-
+    
     try
     {
-        KinematicTree model(pathToURDF);                                                   
-
+        RobotLibrary::Model::KinematicTree model(pathToURDF);
+        
         int numJoints = model.number_of_joints();
 
         clock_t timer;
@@ -84,4 +84,3 @@ int main(int argc, char **argv)
         return 1;
     }
 }
-

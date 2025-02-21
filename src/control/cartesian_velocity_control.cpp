@@ -8,8 +8,8 @@
 #include <Eigen/Core>                                                                               // Eigen::Vector, Eigen::Matrix classes
 #include <fstream>                                                                                  // Reading and writing to files
 #include <iostream>                                                                                 // std::cout, std::cerr
-#include <RobotLibrary/SerialKinematicControl.h>                                                    // Custom control class
-#include <RobotLibrary/CartesianSpline.h>                                                           // Custom trajectory generator
+#include <RobotLibrary/Control/SerialKinematicControl.h>                                            // Custom control class
+#include <RobotLibrary/Trajectory/CartesianSpline.h>                                                // Custom trajectory generator
 #include <time.h> 
 
 // Parameters for the numerical simulation
@@ -37,9 +37,9 @@ int main(int argc, char** argv)
     srand(time(NULL));                                                                              // Seed the random number generator	
 
     // Set up the controller
-    KinematicTree model(argv[1]);                                                                   // Create the model from urdf
+    RobotLibrary::Model::KinematicTree model(argv[1]);                                              // Create the model from urdf
 
-    SerialKinematicControl controller(&model, argv[2]);                                             // Create controller for given endpoint
+    RobotLibrary::Control::SerialKinematicControl controller(&model, argv[2]);                      // Create controller for given endpoint
 
     unsigned int n = model.number_of_joints();                                                      // Because I'm lazy
 
@@ -50,15 +50,15 @@ int main(int argc, char** argv)
     controller.update();                                                                            // Updates properties specific to this controller
 
     // Set up the Cartesian trajectory
-    Pose startPose = controller.endpoint_pose();                                                    // Get the current endpoint pose
+    RobotLibrary::Model::Pose startPose = controller.endpoint_pose();                               // Get the current endpoint pose
 
     Eigen::Vector3d offset = Eigen::VectorXd::Random(3);                                            // Set a random offset
 
-    Pose endPose(startPose.translation() + offset, startPose.quaternion());                         // Offset the start pose
+    RobotLibrary::Model::Pose endPose(startPose.translation() + offset, startPose.quaternion());    // Offset the start pose
  
-    CartesianSpline trajectory(startPose, endPose,
-                                       Eigen::Vector<double,6>::Zero(),
-                                       startTime, endTime);                                         // Create the trajectory
+    RobotLibrary::Trajectory::CartesianSpline trajectory(startPose, endPose,
+                                                         Eigen::Vector<double,6>::Zero(),
+                                                         startTime, endTime);                       // Create the trajectory
 
     // Establish arrays for saving data
     unsigned int m = simulationSteps/ratio;
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
            
            controller.update();                                                                     // Update the controller
            
-           CartesianState desiredState = trajectory.query_state(simulationTime);
+           RobotLibrary::Trajectory::CartesianState desiredState = trajectory.query_state(simulationTime);
 
            try
            {
