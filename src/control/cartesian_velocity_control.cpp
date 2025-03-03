@@ -37,16 +37,16 @@ int main(int argc, char** argv)
     srand(time(NULL));                                                                              // Seed the random number generator	
 
     // Set up the controller
-    RobotLibrary::Model::KinematicTree model(argv[1]);                                              // Create the model from urdf
+    auto model = std::make_shared<RobotLibrary::Model::KinematicTree>(argv[1]);                     // Create shared ptr to model
+    
+    RobotLibrary::Control::SerialKinematicControl controller(model, argv[2]);                       // Create controller for given endpoint
 
-    RobotLibrary::Control::SerialKinematicControl controller(&model, argv[2]);                      // Create controller for given endpoint
-
-    unsigned int n = model.number_of_joints();                                                      // Because I'm lazy
+    unsigned int n = model->number_of_joints();                                                      // Because I'm lazy
 
     Eigen::VectorXd jointPosition = 2*Eigen::VectorXd::Random(n);                                   // Set a random start configuration
     Eigen::VectorXd jointVelocity =   Eigen::VectorXd::Zero(n);                                     // Start at rest
 
-    model.update_state(jointPosition, jointVelocity);                                               // Updates the forward kinematics
+    model->update_state(jointPosition, jointVelocity);                                               // Updates the forward kinematics
     controller.update();                                                                            // Updates properties specific to this controller
 
     // Set up the Cartesian trajectory
@@ -86,7 +86,7 @@ int main(int argc, char** argv)
            // Solve control
            try
            {
-                model.update_state(jointPosition, jointVelocity);                                   // Update kinematics & dynamics
+                model->update_state(jointPosition, jointVelocity);                                   // Update kinematics & dynamics
            }
            catch(const std::exception &exception)
            {
@@ -163,9 +163,9 @@ int main(int argc, char** argv)
     {
       for(int j = 0; j < n; j++)
       {
-           std::string name = model.joint(j).name();
-           const auto &[lower, upper] = model.joint(j).position_limits();
-           double velocity = model.joint(j).speed_limit();
+           std::string name = model->joint(j).name();
+           const auto &[lower, upper] = model->joint(j).position_limits();
+           double velocity = model->joint(j).speed_limit();
            
            file << name << "," << lower << "," << upper << "," << velocity << "\n";
       }
