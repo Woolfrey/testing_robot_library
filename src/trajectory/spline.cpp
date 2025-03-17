@@ -1,10 +1,22 @@
-/**	
- * @file  : spline_test.cpp
- * @author: Jon Woolfrey
- * @date  : March 2024
- * @brief : Saves data on a plynomial trajectory with waypoints (spline) for analysis.
+/**
+ * @file    spline.cpp
+ * @author  Jon Woolfrey
+ * @email   jonathan.woolfrey@gmail.com
+ * @date    March 2025
+ * @version 1.0
+ * @brief   Generates a cubic spline trajectory from the RobotLibrary class.
+ * 
+ * @details This code is for testing the RobotLibrary::Trajectory::SplineTrajectory class.
+ *          It generates a given number of random waypoints, and fits a spline across using a
+ *          given (odd) polynomial order.
+ * 
+ * @copyright Copyright (c) 2025 Jon Woolfrey
+ * 
+ * @license GNU General Public License V3
+ * 
+ * @see https://github.com/Woolfrey/software_robot_library for more information.
+ * @see https://github.com/Woolfrey/software_simple_qp for the optimisation algorithm used in the control.
  */
- 
 #include <fstream>  
 #include <iostream>                                                                                 // std::cerr, std::cout
 #include <time.h>
@@ -27,7 +39,7 @@ int main(int argc, char* argv[])
     unsigned int numberOfWaypoints = std::stoi(argv[1]);                                            // As it says
     unsigned int order = std::stoi(argv[2]);                                                        // Polynomial order
 
-    std::vector<RobotLibrary::Trajectory::State> trajectoryPoints(numberOfWaypoints);
+    std::vector<RobotLibrary::Trajectory::State> trajectoryPoints(numberOfWaypoints);               // Custom data structure
     
     // Start at zero
     trajectoryPoints.front() = { Eigen::VectorXd::Zero(1),
@@ -53,7 +65,7 @@ int main(int argc, char* argv[])
     std::vector<double> times;
     for(int i = 0; i < numberOfWaypoints; i++) times.push_back(i);
 
-    // Override the values for the cubic case to test the custom function
+    // Override higher derivatives for the cubic case to test the custom function
     if(order == 3)
     {
         std::vector<double> positions(numberOfWaypoints);
