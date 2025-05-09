@@ -13,7 +13,7 @@ int main(int argc, char **argv)
         std::cerr << "[ERROR] [URDF TEST] No path to file was given. "
                   << "Usage: ./urdf_test /path/to/file.urdf" << std::endl;
 
-    return 1;
+        return -1;
     }
 
     std::string pathToURDF = argv[1];
@@ -33,9 +33,15 @@ int main(int argc, char **argv)
         Eigen::VectorXd q    = Eigen::VectorXd::Random(numJoints);
         Eigen::VectorXd qdot = Eigen::VectorXd::Random(numJoints);
 
-        if(not model.update_state(q, qdot))
+        try
         {
-            std::cerr << "[ERROR] [URDF TEST] Couldn't update the state for some reason." << std::endl;
+            model.update_state(q, qdot);
+        }
+        catch(const std::exception &exception)
+        {
+            std::cerr << exception.what() << "\n";
+            
+            return -1;
         }
 
         timer = clock() - timer;                                                                    // Difference from the start

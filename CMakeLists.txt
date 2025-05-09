@@ -36,13 +36,5 @@ add_executable(trapezoidal_velocity src/trajectory/trapezoidal_velocity.cpp)
 target_link_libraries(trapezoidal_velocity PRIVATE RobotLibrary::RobotLibrary)
 
 ###################################### Control #####################################################
-
-add_executable(joint_velocity_control src/control/joint_velocity_control.cpp)
-target_link_libraries(joint_velocity_control PRIVATE RobotLibrary::RobotLibrary)
-
-add_executable(cartesian_velocity_control src/control/cartesian_velocity_control.cpp)
-target_link_libraries(cartesian_velocity_control PRIVATE RobotLibrary::RobotLibrary)
-
-add_executable(singularity_start src/control/singularity_start.cpp)
-target_link_libraries(singularity_start PRIVATE RobotLibrary::RobotLibrary)
-
+add_executable(joint_control src/control/joint_control.cpp)
+target_link_libraries(joint_control PRIVATE RobotLibrary::RobotLibrary)

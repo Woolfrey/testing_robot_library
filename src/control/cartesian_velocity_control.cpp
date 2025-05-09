@@ -86,7 +86,7 @@ int main(int argc, char** argv)
            // Solve control
            try
            {
-                model->update_state(jointPosition, jointVelocity);                                   // Update kinematics & dynamics
+                model->update_state(jointPosition, jointVelocity);                                  // Update kinematics & dynamics
            }
            catch(const std::exception &exception)
            {

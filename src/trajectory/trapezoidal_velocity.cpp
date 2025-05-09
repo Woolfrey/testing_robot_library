@@ -71,6 +71,7 @@ int main(int argc, char* argv[])
             }
         }
         file.close();                                                                               // As it says on the label
+        
 	}
 	catch(const std::exception &exception)
 	{
