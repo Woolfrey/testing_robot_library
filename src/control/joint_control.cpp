@@ -1,8 +1,19 @@
 /**
- * @file   joint_velocity_control_test.cpp
- * @author Jon Woolfrey
- * @date   May 2024
- * @brief  A script for testing the SerialPositionControl class.
+ * @file    joint_control.cpp
+ * @author  Jon Woolfrey
+ * @email   jonathan.woolfrey@gmail.com
+ * @date    May 2025
+ * @version 1.0
+ * @brief   Numerical simulation for joint trajectory tracking.
+ * 
+ * @details This executable performs a numerical simulation to assess the joint trajectory tracking
+ *          for the SerialLinkBase class and its child classes.
+ * 
+ * @copyright Copyright (c) 2025 Jon Woolfrey
+ * 
+ * @license GNU General Public License V3
+ * 
+ * @see https://github.com/Woolfrey/software_robot_library for more information.
  */
 
 #include <fstream>                                                                                  // Reading and writing to files
@@ -14,7 +25,7 @@
 
 // Parameters for the numerical simulation
 double simulationFrequency   = 1000;
-unsigned int ratio           = 2;
+unsigned int ratio           = 10;
 double controlFrequency      = (double)(simulationFrequency / ratio);
 double simulationDuration    = 3.0;
 unsigned int simulationSteps = simulationDuration * simulationFrequency;
@@ -30,7 +41,7 @@ int main(int argc, char** argv)
 	if(argc != 4)
 	{
 		std::cerr << "[ERROR] [JOINT CONTROL] Invalid arguments. "
-		          << "Usage: ./kinematic_control_test /path/to/file.urdf endpoint_name MODE\n";
+		          << "Usage: ./joint_control /path/to/file.urdf endpoint_name MODE\n";
 	         
 		return -1;                                                                                  // Exit main() with error
 	}
@@ -162,7 +173,7 @@ int main(int argc, char** argv)
      }
      file.close();
      
-     std::cout << "[INFO] [KINEMATIC JOINT CONTROL TEST]: "
+     std::cout << "[INFO] [JOINT CONTROL]: "
                << "Numerical simulation complete. Data saved to .csv file for analyis.\n";
      
      return 0;                                                                                      // No problems with main()
