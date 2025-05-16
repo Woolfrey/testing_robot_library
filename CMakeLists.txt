@@ -51,3 +51,6 @@ target_link_libraries(joint_control PRIVATE RobotLibrary::RobotLibrary)
 
 add_executable(cartesian_control src/control/cartesian_control.cpp)
 target_link_libraries(cartesian_control PRIVATE RobotLibrary::RobotLibrary)
+
+add_executable(differential_drive_feedback src/control/differential_drive_feedback.cpp)
+target_link_libraries(differential_drive_feedback PRIVATE RobotLibrary::RobotLibrary)
