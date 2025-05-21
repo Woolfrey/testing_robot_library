@@ -21,21 +21,20 @@
 #include <RobotLibrary/Trajectory/MinimumArcLength.h>
 
 // Simulation parameters
-double controlFrequency  = 100.0;
-double simulationTime    = 6.0;
+double controlFrequency  = 100;
+double simulationTime = 10.0;
 int simulationSteps =  static_cast<int>(controlFrequency * simulationTime);
-
 
 int main(int argc, char **argv)
 {   
     // Set up the trajectory
     RobotLibrary::Model::Pose2D startPose(0.0, 0.0, 0.0);
     Eigen::Vector2d endPoint = {-1.0, 1.0};
-    RobotLibrary::Trajectory::MinimumArcLength trajectory(startPose, endPoint, 0.0, simulationTime - 1.0);
+    RobotLibrary::Trajectory::MinimumArcLength trajectory(startPose, endPoint, 1.0, simulationTime - 1.0);
     
     // Parameters for the model
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
-    modelParameters.controlFrequency       = 100.0;                                                 ///< Used by controllers
+    modelParameters.controlFrequency       = controlFrequency;                                      ///< Used by controllers
     modelParameters.inertia                = 0.5 * 5.0 * 0.25 * 0.25;                               ///< Rotational inertia (kg*m^2)
     modelParameters.mass                   = 5.0;                                                   ///< Weight (kg)
     modelParameters.maxAngularAcceleration = 5.0;                                                   ///< Maximum rotational acceleration (rad/s/s)
@@ -45,20 +44,24 @@ int main(int argc, char **argv)
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           ///< Uncertainty of configuration propagation in Kalman filter
     
     // Parameters for the feedback controller
-    double xGain     = 1.0;
-    double yGain     = 50.0;
-    double angleGain = 5.0;
+    double xGain     = 5.0;
+    double yGain     = 30.0;
+    double angleGain = 10.0;
     
     RobotLibrary::Control::DifferentialDriveFeedback controller(xGain, yGain, angleGain, modelParameters);
     
     // Set up data arrays
-    std::vector<std::array<double,3>> desiredConfiguration;
-    std::vector<std::array<double,3>> actualConfiguration;
-    std::vector<std::array<double,2>> poseError;
-    std::vector<std::array<double,2>> controlInputs;
+    std::vector<std::array<double,3>> desiredConfiguration(simulationSteps);
+    std::vector<std::array<double,3>> actualConfiguration(simulationSteps);
+    std::vector<std::array<double,2>> poseError(simulationSteps);
+    std::vector<std::array<double,2>> controlInputs(simulationSteps);
     
-    RobotLibrary::Model::Pose2D actualPose(-0.2, 0.0, 0.54);                                        // Start offset from the trajectory
- 
+    RobotLibrary::Model::Pose2D actualPose(-0.2, 0.2, -0.5);                                         // Start offset from the trajectory
+    
+    Eigen::Vector2d controlInput = {0.0, 0.0};
+    
+    controller.update_state(actualPose, controlInput);
+    
     // Run the simulation
     for (int i = 0; i < simulationSteps; ++i)
     {
@@ -74,17 +77,13 @@ int main(int argc, char **argv)
                                                 desiredPosition[1],
                                                 desiredPosition[2]);                                // We need to put it in a Pose2D object
         
-        Eigen::Vector2d controlInput = controller.track_trajectory(desiredPose, desiredVelocity);
+        controlInput = controller.track_trajectory(desiredPose, desiredVelocity);
     
         // Save data for analysis
-        desiredConfiguration.push_back({desiredPosition[0], desiredPosition[1], desiredPosition[2]});
-        
-        actualConfiguration.push_back({actualPose.translation()[0], actualPose.translation()[1], actualPose.angle()});
-        
-        poseError.push_back({(desiredPose.translation() - controller.pose().translation()).norm(),
-                              abs(desiredPose.angle() - controller.pose().angle())});
-                              
-        controlInputs.push_back({controlInput[0], controlInput[1]});
+        desiredConfiguration[i] = {desiredPosition[0], desiredPosition[1], desiredPosition[2]};
+        actualConfiguration[i]  = {actualPose.translation()[0], actualPose.translation()[1], actualPose.angle()};
+        poseError[i]            = {(desiredPose.translation() - controller.pose().translation()).norm(), abs(desiredPose.angle() - controller.pose().angle())};                   
+        controlInputs[i]        = {controlInput[0], controlInput[1]};
         
         // Propagate the pose
         controller.update_state(actualPose, controlInput);
@@ -113,7 +112,7 @@ int main(int argc, char **argv)
     }
     file.close();  
     
-    // Save the trajectory data
+    // Save the control data
     file.open("control_input_data.csv");
     for(int i = 0; i < simulationSteps; ++i)
     {
@@ -122,6 +121,16 @@ int main(int argc, char **argv)
       file << "\n";
     }
     file.close();  
+    
+    // Save the error data
+    file.open("tracking_error_data.csv");
+    for (int i = 0; i < simulationSteps; ++i)
+    {
+        file << (double)(i / controlFrequency);
+        for(int j = 0; j < 2; ++j) file << "," << poseError[i][j];
+        file << "\n";
+    }
+    file.close(); 
     
     return 0;                                                                                       // No problems with main
 }
