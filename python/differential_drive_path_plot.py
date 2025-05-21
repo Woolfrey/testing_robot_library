@@ -35,7 +35,7 @@ ax1.plot(x_desired, y_desired, label='Desired', color='black')
 ax1.plot(x_actual,  y_actual,  label='Actual',  color='red')
 
 # Arrows for desired path start and end
-arrow_length = 0.1
+arrow_length = 0.05
 ax1.arrow(x_actual[0], y_actual[0],
           arrow_length * np.cos(heading_actual[0]),
           arrow_length * np.sin(heading_actual[0]),
@@ -71,17 +71,49 @@ ax2_1.plot(control_time, linear_velocity, color='black')
 ax2_1.set_ylabel('Linear Velocity (m/s)')
 ax2_1.spines['top'].set_visible(False)
 ax2_1.spines['right'].set_visible(False)
+ax2_1.spines['bottom'].set_visible(False)
+ax2_1.tick_params(axis='x', which='both', bottom=False, top=False)
 ax2_1.grid(False)
 
 # Angular velocity
 ax2_2.plot(control_time, angular_velocity, color='black')
 ax2_2.set_ylabel('Angular Velocity (rad/s)')
-ax2_2.set_xlabel('Time')
+ax2_2.set_xlabel('Time (s)')
 ax2_2.spines['top'].set_visible(False)
 ax2_2.spines['right'].set_visible(False)
 ax2_2.grid(False)
-
 fig2.suptitle('Control Inputs')
+
+# Load tracking error data
+error_csv_path = os.path.join(script_dir, '..', 'build', 'tracking_error_data.csv')
+error_data = np.loadtxt(error_csv_path, delimiter=',')
+error_time = error_data[:, 0]
+position_error_mm = error_data[:, 1] * 1000  # Convert meters to mm
+orientation_error_deg = np.degrees(error_data[:, 2])  # Convert radians to degrees
+
+# Plot tracking errors in subfigures
+fig3, (ax3_1, ax3_2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+
+# Position error
+ax3_1.plot(error_time, position_error_mm, color='black')
+ax3_1.set_ylabel('Position Error (mm)')
+ax3_1.spines['top'].set_visible(False)
+ax3_1.spines['right'].set_visible(False)
+ax3_1.spines['bottom'].set_visible(False)
+ax3_1.tick_params(axis='x', which='both', bottom=False, top=False)
+ax3_1.grid(False)
+
+# Orientation error
+ax3_2.plot(error_time, orientation_error_deg, color='black')
+ax3_2.set_ylabel('Orientation Error (°)')
+ax3_2.set_xlabel('Time (s)')
+ax3_2.spines['top'].set_visible(False)
+ax3_2.spines['right'].set_visible(False)
+ax3_2.grid(False)
+fig3.suptitle('Tracking Errors')
+
+plt.tight_layout()
+plt.show()
 
 plt.tight_layout()
 plt.show()
