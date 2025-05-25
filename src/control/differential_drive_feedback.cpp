@@ -34,21 +34,23 @@ int main(int argc, char **argv)
     
     // Parameters for the model
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
-    modelParameters.controlFrequency       = controlFrequency;                                      ///< Used by controllers
-    modelParameters.inertia                = 0.5 * 5.0 * 0.25 * 0.25;                               ///< Rotational inertia (kg*m^2)
-    modelParameters.mass                   = 5.0;                                                   ///< Weight (kg)
-    modelParameters.maxAngularAcceleration = 5.0;                                                   ///< Maximum rotational acceleration (rad/s/s)
-    modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   ///< Maximum rotational speed (rad/s)
-    modelParameters.maxLinearAcceleration  = 2.0;                                                   ///< Maximum forward acceleration (m/s/s)
-    modelParameters.maxLinearVelocity      = 2.0;                                                   ///< Maximum forward speed (m/s)
-    modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           ///< Uncertainty of configuration propagation in Kalman filter
+    modelParameters.inertia                = 0.5 * 5.0 * 0.25 * 0.25;                               // Rotational inertia (kg*m^2)
+    modelParameters.mass                   = 5.0;                                                   // Weight (kg)
+    modelParameters.maxAngularAcceleration = 5.0;                                                   // Maximum rotational acceleration (rad/s/s)
+    modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
+    modelParameters.maxLinearAcceleration  = 2.0;                                                   // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
+    modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     
     // Parameters for the feedback controller
-    double xGain     = 5.0;
-    double yGain     = 30.0;
-    double angleGain = 10.0;
+    RobotLibrary::Control::DifferentialDriveFeedbackParameters controlParameters;
+    controlParameters.controlFrequency    = controlFrequency;
+    controlParameters.minimumSafeDistance =  1.0;
+    controlParameters.orientationGain     = 10.0;
+    controlParameters.xPositionGain       =  5.0;
+    controlParameters.yPositionGain       = 50.0;
     
-    RobotLibrary::Control::DifferentialDriveFeedback controller(xGain, yGain, angleGain, modelParameters);
+    RobotLibrary::Control::DifferentialDriveFeedback controller(modelParameters, controlParameters);
     
     // Set up data arrays
     std::vector<std::array<double,3>> desiredConfiguration(simulationSteps);
@@ -56,7 +58,7 @@ int main(int argc, char **argv)
     std::vector<std::array<double,2>> poseError(simulationSteps);
     std::vector<std::array<double,2>> controlInputs(simulationSteps);
     
-    RobotLibrary::Model::Pose2D actualPose(-0.2, 0.2, -0.5);                                         // Start offset from the trajectory
+    RobotLibrary::Model::Pose2D actualPose(-0.2, 0.2, 0.17);                                        // Start offset from the trajectory
     
     Eigen::Vector2d controlInput = {0.0, 0.0};
     
@@ -131,6 +133,9 @@ int main(int argc, char **argv)
         file << "\n";
     }
     file.close(); 
+    
+    std::cout << "[INFO] [DIFFERENTIAL DRIVE FEEDBACK CONTROL] Numerical simulation complete."
+              << "Data saved to .csv files for analysis.\n";
     
     return 0;                                                                                       // No problems with main
 }

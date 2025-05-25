@@ -24,7 +24,7 @@
 double simulationTime = 10;
 double controlFrequency = 100.0;
 unsigned int simulationSteps = 1000;
-unsigned int predictionSteps = 10;
+unsigned int predictionSteps = 200;
 
 int main(int argc, char **argv)
 {   
@@ -35,12 +35,11 @@ int main(int argc, char **argv)
     
     // Parameters for the model
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
-    modelParameters.controlFrequency       = controlFrequency;                                      // Used by controllers
-    modelParameters.inertia                = 0.5 * 0.5 * 0.25 * 0.25;                               // Rotational inertia (kg*m^2)
-    modelParameters.mass                   = 0.5;                                                   // Weight (kg)
-    modelParameters.maxAngularAcceleration = 5.0;                                                   // Maximum rotational acceleration (rad/s/s)
+    modelParameters.inertia                = 0.5 * 5.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
+    modelParameters.mass                   = 5.0;                                                  // Weight (kg)
+    modelParameters.maxAngularAcceleration = 4.0;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
-    modelParameters.maxLinearAcceleration  = 2.0;                                                   // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearAcceleration  = 1.0;                                                   // Maximum forward acceleration (m/s/s)
     modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     
@@ -53,25 +52,28 @@ int main(int argc, char **argv)
     
     // Parameters for the predictive controller
     RobotLibrary::Control::DifferentialDrivePredictiveParameters controlParameters;
-    controlParameters.maxControlStepNorm = 1e-08;                                                   // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions = 2;                                                       // No. of forward & backward passes for the DDP algorithm
-    controlParameters.predictionSteps    = predictionSteps;                                         // Length of prediction horizon
+    controlParameters.controlFrequency       = controlFrequency;
+    controlParameters.exponent               = -0.05;                                               // Growth or decay of pose error weighting
+    controlParameters.maximumControlStepNorm = 1e-06;                                               // DDP algorithm terminates early if max. ||du|| is smaller than this
+    controlParameters.numberOfRecursions     = 2;                                                   // No. of forward & backward passes for the DDP algorithm
+    controlParameters.predictionSteps        = predictionSteps;                                     // Length of prediction horizon
+   
+    controlParameters.poseErrorWeight << 500.0,   0.0, 0.0,
+                                           0.0, 500.0, 0.9,
+                                           0.0,   0.9, 1.0;
     
-    controlParameters.initialPoseErrorWeight << 200.0,   0.00,  0.00,
-                                                  0.0, 200.00, -0.09,
-                                                  0.0,  -0.09,  0.10;
-                                                 
-    controlParameters.finalPoseErrorWeight << 5.0,  0.000, 0.000,
-                                              0.0,  5.000,-0.005,
-                                              0.0, -0.005, 0.010;
-    
-    RobotLibrary::Control::DifferentialDrivePredictive controller(controlParameters,
-                                                                  modelParameters,
+    RobotLibrary::Control::DifferentialDrivePredictive controller(modelParameters,
+                                                                  controlParameters,
                                                                   solverOptions);
  
-    RobotLibrary::Model::Pose2D actualPose(-0.2, 0.2, -0.5);                                        // Start offset from the trajectory
+    RobotLibrary::Model::Pose2D actualPose(-0.2, 0.2, 0.5);                                        // Start offset from the trajectory
     
     Eigen::Vector2d controlInput = {0.0, 0.0};
+    
+    controller.update_state(actualPose, controlInput);
+    
+    // Set up obstacle(s)
+    std::vector<std::vector<RobotLibrary::Model::Ellipsoid<2>>> obstacles;
        
     // Set up data arrays for analysis
     std::vector<std::array<double,3>> desiredConfiguration; desiredConfiguration.resize(simulationSteps);
@@ -87,7 +89,7 @@ int main(int argc, char **argv)
         // Query the desired state from the trajectory across the control horizon
         std::vector<RobotLibrary::Model::DifferentialDriveState> desiredStates;
         
-        for (int j = 0; j < predictionSteps; ++j)
+        for (int j = 0; j < predictionSteps + 1; ++j)
         {
             const auto &[pos, vel, acc] = trajectory.query_state(simTime + j / controlFrequency);   // Sample the trajectory across the horizon
          
@@ -99,7 +101,18 @@ int main(int argc, char **argv)
             desiredStates.push_back(state);   
         }
 
-        Eigen::Vector2d controlInput = controller.track_trajectory(desiredStates);                  // Solve the predictive control problem
+        try
+        {
+            controlInput = controller.track_trajectory(desiredStates, obstacles);                   // Solve the predictive control problem
+        }
+        catch (const std::exception &exception)
+        {
+            throw std::runtime_error("[ERROR] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] "
+                                     "Failed to solve trajectory tracking:\n"
+                                     + std::string(exception.what()));
+             
+             return -1;
+        }
         
         // Save data for future analysis
         desiredConfiguration[i] = {desiredStates[0].pose.translation()[0], desiredStates[0].pose.translation()[1], desiredStates[0].pose.angle()};
@@ -109,7 +122,7 @@ int main(int argc, char **argv)
         
         // For next loop
         controller.update_state(actualPose, controlInput);
-        actualPose = controller.predicted_pose(actualPose, controlInput);                           // Propagate the state
+        actualPose = controller.predicted_pose();                                                   // Propagate the state
     }
     
     std::ofstream file;
@@ -153,6 +166,9 @@ int main(int argc, char **argv)
         file << "\n";
     }
     file.close(); 
+    
+    std::cout << "[INFO] [DIFFERENTIAL DRIVE PREDICTIVE CONTROL] Numerical simulation complete."
+              << "Data saved to .csv files for analysis.\n";
 
     return 0;                                                                                       // No problems with main
 }
