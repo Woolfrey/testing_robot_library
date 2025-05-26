@@ -73,7 +73,7 @@ int main(int argc, char **argv)
     controller.update_state(actualPose, controlInput);
     
     // Set up obstacle(s)
-    std::vector<std::vector<RobotLibrary::Model::Ellipsoid<2>>> obstacles;
+    std::vector<std::vector<RobotLibrary::Math::Ellipsoid<2>>> obstacles;
        
     // Set up data arrays for analysis
     std::vector<std::array<double,3>> desiredConfiguration; desiredConfiguration.resize(simulationSteps);
