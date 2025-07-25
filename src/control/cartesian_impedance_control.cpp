@@ -20,13 +20,12 @@
 #include <fstream>                                                                                  // Reading and writing to files
 #include <iostream>                                                                                 // std::cout, std::cerr
 #include <RobotLibrary/Control/SerialDynamicControl.h>                                              // Custom control class
-#include <RobotLibrary/Control/SerialKinematicControl.h>                                            // Custom control class
 #include <RobotLibrary/Trajectory/CartesianSpline.h>                                                // Custom trajectory generator
 #include <time.h> 
 
 // Parameters for the numerical simulation
 double simulationFrequency = 1000;
-unsigned int ratio         = 10;
+unsigned int ratio         = 2;
 double controlFrequency    = simulationFrequency/ratio;
 double simulationDuration  = 5.0;
 unsigned int simulationSteps = simulationDuration*simulationFrequency;
@@ -38,44 +37,43 @@ double endTime = simulationDuration - 0.5;
 int main(int argc, char** argv)
 {
     // Default for argc is 1 but I don't know why ┐(ﾟ ～ﾟ )┌
-    if(argc != 4)
+    /*
+    if(argc != 3)
     {
         std::cerr << "[ERROR] [CARTESIAN CONTROL] No path to file was given. "
                   << "Usage: ./cartesian_control /path/to/file.urdf endpoint_name MODE\n";
              
         return -1;                                                                                  // Exit main() with error
-    }
+    }*/
 
     srand(time(NULL));                                                                              // Seed the random number generator	
 
     // Set up the controller
-    auto model = std::make_shared<RobotLibrary::Model::KinematicTree>(argv[1]);                     // Create shared ptr for model
+    auto model = std::make_shared<RobotLibrary::Model::KinematicTree>("../urdf/iiwa14.urdf");       // Create shared ptr for mode
 
-    std::string endpointName = argv[2];
-
-    std::unique_ptr<RobotLibrary::Control::SerialLinkBase> controller;                              // This allows for polymorphism
-
-         if (argv[3] == std::string("VELOCITY")) controller = std::make_unique<RobotLibrary::Control::SerialKinematicControl>(model, endpointName);
-    else if (argv[3] == std::string("TORQUE"))   controller = std::make_unique<RobotLibrary::Control::SerialDynamicControl>(model, endpointName);
-    else
-    {
-        std::cerr << "[ERROR] [JOINT CONTROL] Invalid argument for control mode. Options are VELOCITY or TORQUE.\n";         
-        return -1;
-    }
+    auto controller = RobotLibrary::Control::SerialDynamicControl(model, "link7");
 
     unsigned int n = model->number_of_joints();                                                     // Because I'm lazy
 
-    Eigen::VectorXd jointPosition = 2*Eigen::VectorXd::Random(n);                                   // Set a random start configuration
+    Eigen::VectorXd jointPosition(n);
+    jointPosition << 1.8439999999999983,
+                    -0.6560000000000009, 
+                    -1.782,
+                    -1.3830000000000005,
+                     0.05999999999999999,
+                     0.031099999999999992,
+                    -0.705;
+                    
     Eigen::VectorXd jointVelocity =   Eigen::VectorXd::Zero(n);                                     // Start at rest
 
     model->update_state(jointPosition, jointVelocity);                                              // Updates the forward kinematics
-    
-    controller->update();                                                                            // Updates properties specific to this controller
+
+    controller.update();                                                                           // Updates properties specific to this controller
 
     // Set up the Cartesian trajectory
-    RobotLibrary::Model::Pose startPose = controller->endpoint_pose();                              // Get the current endpoint pose
+    RobotLibrary::Model::Pose startPose = controller.endpoint_pose();                               // Get the current endpoint pose
 
-    Eigen::Vector3d offset = Eigen::VectorXd::Random(3);                                            // Set a random offset
+    Eigen::Vector3d offset; offset << 0.1, 0.3, -0.3;                                               // Set a random offset
 
     RobotLibrary::Model::Pose endPose(startPose.translation() + offset, startPose.quaternion());    // Offset the start pose
  
@@ -92,24 +90,46 @@ int main(int argc, char** argv)
 
     unsigned int rowCounter = 0;                                                                    // For indexing across arrays
 
-
-    // Run the numerical simulation
-    
     Eigen::VectorXd jointControl = Eigen::VectorXd::Zero(n);
-       
+    
+    // Run the numerical simulation   
     for(int i = 0; i < simulationSteps; ++i)
     {
-      double simulationTime = i/simulationFrequency;                                                // Current simulation time
-      
-             if (argv[3] == std::string("VELOCITY")) jointVelocity  = jointControl;
-        else if (argv[3] == std::string("TORQUE"))   jointVelocity += model->joint_inertia_matrix().llt().solve(jointControl) / simulationFrequency;
-        else
+        double simulationTime = i/simulationFrequency;                                                // Current simulation time
+
+        jointVelocity += model->joint_inertia_matrix().ldlt().solve(jointControl) / simulationFrequency;
+        jointPosition += jointVelocity / simulationFrequency;  
+
+        for (int j = 0; j < n; ++j)
         {
-            std::cerr << "[ERROR] [JOINT CONTROL] Control mode was " << argv[3] << " but must be VELOCITY or TORQUE.\n";
+            const auto &posLimits = model->link(j)->joint().position_limits();
+            const auto &velLimit = model->link(j)->joint().speed_limit();
+
+            // Clamp position to hard limits
+            if (jointPosition[j] < posLimits.lower)
+            {
+                jointPosition[j] = posLimits.lower;
+                jointVelocity[j] = 0.0;  // reset velocity to avoid bouncing back
+            }
+            else if (jointPosition[j] > posLimits.upper)
+            {
+                jointPosition[j] = posLimits.upper;
+                jointVelocity[j] = 0.0;
+            }
+
+            // Optionally clamp velocity to velocity limits
+            if (jointVelocity[j] < -velLimit)
+            {
+                jointVelocity[j] = -velLimit;
+            }
+            else if (jointVelocity[j] > velLimit)
+            {
+                jointVelocity[j] = velLimit;
+            }
         }
-         
-        jointPosition += jointVelocity / simulationFrequency;
-      
+
+      jointControl.setZero();
+
       // Run the control at 1/10th of the simulation
       if(i%ratio == 0)
       {                                                       
@@ -124,31 +144,32 @@ int main(int argc, char** argv)
            }
            catch(const std::exception &exception)
            {
-                std::cerr << exception.what() << "\n";
+                std::cerr << "Failed on stimulation step " << i << ": " << exception.what() << "\n";
                 return -1;                                                                          // Stop
            }
            
-           controller->update();                                                                     // Update the controller
+           controller.update();                                                                     // Update the controller
            
            RobotLibrary::Trajectory::CartesianState desiredState = trajectory.query_state(simulationTime);
 
            try
            {
-                jointControl = controller->track_endpoint_trajectory(desiredState.pose,
+                jointControl = controller.track_endpoint_trajectory(desiredState.pose,
                                                                      desiredState.twist,
                                                                      desiredState.acceleration);
            }
            catch(const std::exception &exception)
            {
-                std::cerr << exception.what() << "\n";
+                std::cout << "Failed on simulation step " << i << ": " << exception.what() << "\n";
+                
                 return -1;
            }
            
            // Save pose error
-           Eigen::Vector<double,6> poseError = controller->endpoint_pose().error(desiredState.pose);
+           Eigen::Vector<double,6> poseError = controller.endpoint_pose().error(desiredState.pose);
            poseErrorArray(rowCounter,0) = poseError.head(3).norm();                                 // Position error
            poseErrorArray(rowCounter,1) = poseError.tail(3).norm();                                 // Orientation error
-           poseErrorArray(rowCounter,2) = controller->manipulability();                             // Proximity to a singularity
+           poseErrorArray(rowCounter,2) = controller.manipulability();                              // Proximity to a singularity
            
            rowCounter++;
       }

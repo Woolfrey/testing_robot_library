@@ -7,8 +7,11 @@ Created on Fri May 16 14:37:03 2025
 """
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import os
 import numpy as np
+
+phi = 1.618
 
 # Get the directory of the current script
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -28,11 +31,26 @@ x_actual = actual_data[:, 1]
 y_actual = actual_data[:, 2]
 heading_actual = actual_data[:, 3]
 
+# Load the first row of obstacle_path.csv (time, center_x, center_y, radius_x, radius_y)
+obstacle_csv_path = os.path.join(script_dir, '..', 'build', 'obstacle_data.csv')
+obstacle_first_row = np.loadtxt(obstacle_csv_path, delimiter=',', max_rows=1)
+time_obs = obstacle_first_row[0]
+center_x = obstacle_first_row[1]
+center_y = obstacle_first_row[2]
+radius_x = obstacle_first_row[3]
+radius_y = obstacle_first_row[4]
+
 # Plot desired and actual paths
 fig1, ax1 = plt.subplots()
 
 ax1.plot(x_desired, y_desired, label='Desired', color='black')
 ax1.plot(x_actual,  y_actual,  label='Actual',  color='red')
+
+# Plot the obstacle ellipsoid as an ellipse patch
+ellipse = patches.Ellipse((center_x, center_y), width=2*radius_x, height=2*radius_y,
+                          edgecolor='blue', facecolor='none', linewidth=2, label='Obstacle Ellipsoid')
+ax1.add_patch(ellipse)
+ax1.text(center_x, center_y, f't={time_obs:.2f}', color='blue', fontsize=8)
 
 # Arrows for desired path start and end
 arrow_length = 0.05
@@ -53,10 +71,9 @@ ax1.grid(False)
 ax1.set_xlabel('X Position')
 ax1.set_ylabel('Y Position')
 ax1.set_title('Cartesian Path')
-ax1.legend()
 ax1.axis('equal')
 
-# Load control input data
+### Load control input data
 control_csv_path = os.path.join(script_dir, '..', 'build', 'control_input_data.csv')
 control_data = np.loadtxt(control_csv_path, delimiter=',')
 control_time = control_data[:, 0]
@@ -92,7 +109,7 @@ position_error_mm = error_data[:, 1] * 1000  # Convert meters to mm
 orientation_error_deg = np.degrees(error_data[:, 2])  # Convert radians to degrees
 
 # Plot tracking errors in subfigures
-fig3, (ax3_1, ax3_2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+fig3, (ax3_1, ax3_2) = plt.subplots(2, 1, figsize=(4*phi, 4), sharex=True)
 
 # Position error
 ax3_1.plot(error_time, position_error_mm, color='black')
@@ -111,9 +128,6 @@ ax3_2.spines['top'].set_visible(False)
 ax3_2.spines['right'].set_visible(False)
 ax3_2.grid(False)
 fig3.suptitle('Tracking Errors')
-
-plt.tight_layout()
-plt.show()
 
 plt.tight_layout()
 plt.show()
