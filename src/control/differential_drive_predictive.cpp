@@ -21,8 +21,8 @@
 #include <RobotLibrary/Trajectory/MinimumArcLength.h>
 
 // Simulation parameters
-double simulationTime = 5.0;
-double controlFrequency = 250.0;
+double simulationTime = 8.0;
+double controlFrequency = 100.0;
 unsigned int simulationSteps = 1000;
 unsigned int predictionSteps = 100;
 
@@ -30,17 +30,17 @@ int main(int argc, char **argv)
 {   
     // Set up the trajectory
     RobotLibrary::Model::Pose2D startPose(0.0, 0.0, 0.0);
-    Eigen::Vector2d endPoint = {-0.1, 1.0};
+    Eigen::Vector2d endPoint = {-1.0, 1.0};
     RobotLibrary::Trajectory::MinimumArcLength trajectory(startPose, endPoint, 1.0, simulationTime - 1.0);
     
     // Parameters for the model
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
     modelParameters.inertia                = 0.5 * 50.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
     modelParameters.mass                   = 50.0;                                                  // Weight (kg)
-    modelParameters.maxAngularAcceleration = 4.0;                                                   // Maximum rotational acceleration (rad/s/s)
+    modelParameters.maxAngularAcceleration = 5.0;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
-    modelParameters.maxLinearAcceleration  = 5.0;                                                   // Maximum forward acceleration (m/s/s)
-    modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
+    modelParameters.maxLinearAcceleration  = 2.0;                                                   // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearVelocity      = 1.0;                                                   // Maximum forward speed (m/s)
     modelParameters.minimumSafeDistance    = 0.5;
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     
@@ -54,20 +54,20 @@ int main(int argc, char **argv)
     // Parameters for the predictive controller
     RobotLibrary::Control::DifferentialDrivePredictiveParameters controlParameters;
     controlParameters.controlFrequency       = controlFrequency;
-    controlParameters.exponent               = -0.01;                                               // Growth or decay of pose error weighting
+    controlParameters.exponent               =  0.01;                                               // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm = 1e-06;                                               // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions     = 5;                                                   // No. of forward & backward passes for the DDP algorithm
+    controlParameters.numberOfRecursions     = 10;                                                  // No. of forward & backward passes for the DDP algorithm
     controlParameters.predictionSteps        = predictionSteps;                                     // Length of prediction horizon
    
-    controlParameters.poseErrorWeight << 10000.0,  0.0,  0.0,
-                                          0.0, 10000.0, 0.0,
-                                          0.0,  0.0, 100.0;
+    controlParameters.poseErrorWeight << 8000.0,    0.0,  0.0,
+                                            0.0, 8000.0,  4.0,
+                                            0.0,    4.0,  5.0;
     
     RobotLibrary::Control::DifferentialDrivePredictive controller(modelParameters,
                                                                   controlParameters,
                                                                   solverOptions);
  
-    RobotLibrary::Model::Pose2D actualPose(-0.2, 0.1, -0.1);                                         // Start offset from the trajectory
+    RobotLibrary::Model::Pose2D actualPose(-0.0, 0.0, 0.0);                                         // Start offset from the trajectory
     
     Eigen::Vector2d controlInput = {0.0, 0.0};
     
