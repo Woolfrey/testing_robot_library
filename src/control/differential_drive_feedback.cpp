@@ -17,6 +17,7 @@
 #include <fstream>                                                                                  // Reading and writing to files
 #include <iostream>  
 #include <RobotLibrary/Control/DifferentialDriveFeedback.h>
+#include <RobotLibrary/Math/Ellipsoid.h>
 #include <RobotLibrary/Model/Pose2D.h>
 #include <RobotLibrary/Trajectory/MinimumArcLength.h>
 
@@ -50,7 +51,20 @@ int main(int argc, char **argv)
     controlParameters.xPositionGain       =  5.0;
     controlParameters.yPositionGain       = 50.0;
     
+    // These are for the QP solver
+    controlParameters.qpsolver.stepSizeTolerance = 1e-08;                                           // Needs to be very small for this low dimensional problem
+    
+    
     RobotLibrary::Control::DifferentialDriveFeedback controller(modelParameters, controlParameters);
+    
+    // Set up the obstacles
+    auto circle   = std::make_unique<RobotLibrary::Math::Ellipsoid2D>(Eigen::Matrix2d::Identity() * 0.01);
+    
+    auto obstacle = RobotLibrary::Model::Obstacle2D(std::move(circle));                             // Create obstacle
+    
+    obstacle.update_state(RobotLibrary::Model::Pose2D(0.2, 0.2, 0.0), Eigen::Vector3d::Zero());     // Set new pose (zero speed)
+    
+    std::vector<RobotLibrary::Model::Obstacle2D> obstacles; // FILL THIS IN LATER
     
     // Set up data arrays
     std::vector<std::array<double,3>> desiredConfiguration(simulationSteps);
@@ -79,7 +93,7 @@ int main(int argc, char **argv)
                                                 desiredPosition[1],
                                                 desiredPosition[2]);                                // We need to put it in a Pose2D object
         
-        controlInput = controller.track_trajectory(desiredPose, desiredVelocity);
+        controlInput = controller.track_trajectory(desiredPose, desiredVelocity, obstacles);
     
         // Save data for analysis
         desiredConfiguration[i] = {desiredPosition[0], desiredPosition[1], desiredPosition[2]};
@@ -134,7 +148,7 @@ int main(int argc, char **argv)
     }
     file.close(); 
     
-    std::cout << "[INFO] [DIFFERENTIAL DRIVE FEEDBACK CONTROL] Numerical simulation complete."
+    std::cout << "[INFO] [DIFFERENTIAL DRIVE FEEDBACK CONTROL] Numerical simulation complete. "
               << "Data saved to .csv files for analysis.\n";
     
     return 0;                                                                                       // No problems with main
