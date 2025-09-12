@@ -47,10 +47,10 @@ ax1.plot(x_desired, y_desired, label='Desired', color='black')
 ax1.plot(x_actual,  y_actual,  label='Actual',  color='red')
 
 # Plot the obstacle ellipsoid as an ellipse patch
-ellipse = patches.Ellipse((center_x, center_y), width=2*radius_x, height=2*radius_y,
-                          edgecolor='blue', facecolor='none', linewidth=2, label='Obstacle Ellipsoid')
-ax1.add_patch(ellipse)
-ax1.text(center_x, center_y, f't={time_obs:.2f}', color='blue', fontsize=8)
+# ellipse = patches.Ellipse((center_x, center_y), width=2*radius_x, height=2*radius_y,
+#                           edgecolor='blue', facecolor='none', linewidth=2, label='Obstacle Ellipsoid')
+# ax1.add_patch(ellipse)
+# ax1.text(center_x, center_y, f't={time_obs:.2f}', color='blue', fontsize=8)
 
 # Arrows for desired path start and end
 arrow_length = 0.05
@@ -93,8 +93,8 @@ ax2_1.tick_params(axis='x', which='both', bottom=False, top=False)
 ax2_1.grid(False)
 
 # Angular velocity
-ax2_2.plot(control_time, angular_velocity, color='black')
-ax2_2.set_ylabel('Angular Velocity (rad/s)')
+ax2_2.plot(control_time, angular_velocity * (30 / np.pi), color='black')
+ax2_2.set_ylabel('Angular Velocity (rpm)')
 ax2_2.set_xlabel('Time (s)')
 ax2_2.spines['top'].set_visible(False)
 ax2_2.spines['right'].set_visible(False)
