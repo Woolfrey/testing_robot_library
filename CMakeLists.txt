@@ -55,5 +55,5 @@ target_link_libraries(cartesian_velocity_control PRIVATE RobotLibrary::RobotLibr
 add_executable(differential_drive_feedback src/control/differential_drive_feedback.cpp)
 target_link_libraries(differential_drive_feedback PRIVATE RobotLibrary::RobotLibrary)
 
-#add_executable(differential_drive_predictive src/control/differential_drive_predictive.cpp)
-#target_link_libraries(differential_drive_predictive PRIVATE RobotLibrary::RobotLibrary)
+add_executable(differential_drive_predictive src/control/differential_drive_predictive.cpp)
+target_link_libraries(differential_drive_predictive PRIVATE RobotLibrary::RobotLibrary)
