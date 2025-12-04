@@ -41,9 +41,9 @@ int main(int argc, char **argv)
     modelParameters.mass                   = 50.0;                                                  // Weight (kg)
     modelParameters.maxAngularAcceleration = 0.5;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
-    modelParameters.maxLinearAcceleration  = 1.0;                                                  // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearAcceleration  = 0.5;                                                  // Maximum forward acceleration (m/s/s)
     modelParameters.maxLinearVelocity      = 2.0;                                                  // Maximum forward speed (m/s)
-    modelParameters.minimumSafeDistance    = 0.05;
+    modelParameters.minimumSafeDistance    = 0.5;
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
     
     // Parameters for the predictive controller
@@ -51,13 +51,13 @@ int main(int argc, char **argv)
     controlParameters.controlFrequency        = controlFrequency;
     controlParameters.exponent                =  0.01;                                              // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm  = 1e-06;                                              // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions      = 10;                                                 // No. of forward & backward passes for the DDP algorithm
-    controlParameters.obstaclePotentialScalar = 1e-03;                                              // Scales the repulsion force
+    controlParameters.numberOfRecursions      = 25;                                                 // No. of forward & backward passes for the DDP algorithm
+    controlParameters.obstaclePotentialScalar = 5e-03;                                              // Scales the repulsion force
     controlParameters.predictionSteps         = predictionSteps;                                    // Length of prediction horizon
    
     controlParameters.poseErrorWeight << 2000.0,    0.0,  0.0,
-                                            0.0, 2000.0, -0.0,
-                                            0.0,  -0.0,   5.0;
+                                            0.0, 2000.0,  1.0,
+                                            0.0,    1.0,  5.0;
     
     SolverOptions<double> solverOptions;                                                            // Not currently being used
     
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
         
         obstacles[i].push_back(RobotLibrary::Model::Obstacle2D(std::move(line)));                   // Move it in to the obstacle vector
         
-        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(0.501, 0.0, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
+        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(0.60, 0.0, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
     }
 
     // Set up data arrays for analysis
