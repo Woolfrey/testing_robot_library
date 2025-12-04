@@ -17,14 +17,16 @@
 #include <fstream>                                                                                  // Reading and writing to files
 #include <iostream>  
 #include <RobotLibrary/Control/DifferentialDrivePredictive.h>
+#include <RobotLibrary/Math/Line.h>
 #include <RobotLibrary/Model/Pose2D.h>
 #include <RobotLibrary/Trajectory/MinimumArcLength.h>
 
 // Simulation parameters
-double simulationTime = 10.0;
-double controlFrequency = 100.0;
-unsigned int simulationSteps = 1000;
-unsigned int predictionSteps = 100;
+double       simulationTime   =  10.0;
+double       controlFrequency = 100.0;
+
+unsigned int simulationSteps  = 1000;
+unsigned int predictionSteps  =   50;
 
 int main(int argc, char **argv)
 {   
@@ -37,55 +39,53 @@ int main(int argc, char **argv)
     RobotLibrary::Model::DifferentialDriveParameters modelParameters;
     modelParameters.inertia                = 0.5 * 50.0 * 0.25 * 0.25;                              // Rotational inertia (kg*m^2)
     modelParameters.mass                   = 50.0;                                                  // Weight (kg)
-    modelParameters.maxAngularAcceleration = 2.0;                                                   // Maximum rotational acceleration (rad/s/s)
+    modelParameters.maxAngularAcceleration = 0.5;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
-    modelParameters.maxLinearAcceleration  = 2.0;                                                   // Maximum forward acceleration (m/s/s)
-    modelParameters.maxLinearVelocity      = 1.0;                                                   // Maximum forward speed (m/s)
-    modelParameters.minimumSafeDistance    = 0.5;
+    modelParameters.maxLinearAcceleration  = 1.0;                                                  // Maximum forward acceleration (m/s/s)
+    modelParameters.maxLinearVelocity      = 2.0;                                                  // Maximum forward speed (m/s)
+    modelParameters.minimumSafeDistance    = 0.05;
     modelParameters.propagationUncertainty = Eigen::Matrix3d::Identity();                           // Uncertainty of configuration propagation in Kalman filter
-    
-    // Parameters for the QP solver
-    SolverOptions<double> solverOptions;
-    solverOptions.stepSizeTolerance    = 1e-08;                                                     // This should be very small
-    solverOptions.maxSteps             = 5;
     
     // Parameters for the predictive controller
     RobotLibrary::Control::DifferentialDrivePredictiveParameters controlParameters;
-    controlParameters.controlFrequency       = controlFrequency;
-    controlParameters.exponent               =  0.005;                                              // Growth or decay of pose error weighting
-    controlParameters.maximumControlStepNorm = 1e-08;                                               // DDP algorithm terminates early if max. ||du|| is smaller than this
-    controlParameters.numberOfRecursions     = 10;                                                  // No. of forward & backward passes for the DDP algorithm
-    controlParameters.predictionSteps        = predictionSteps;                                     // Length of prediction horizon
+    controlParameters.controlFrequency        = controlFrequency;
+    controlParameters.exponent                =  0.01;                                              // Growth or decay of pose error weighting
+    controlParameters.maximumControlStepNorm  = 1e-06;                                              // DDP algorithm terminates early if max. ||du|| is smaller than this
+    controlParameters.numberOfRecursions      = 10;                                                 // No. of forward & backward passes for the DDP algorithm
+    controlParameters.obstaclePotentialScalar = 1e-03;                                              // Scales the repulsion force
+    controlParameters.predictionSteps         = predictionSteps;                                    // Length of prediction horizon
    
-    controlParameters.poseErrorWeight << 5000.0,    0.0,  0.0,
-                                            0.0, 5000.0,  1.0,
-                                            0.0,    1.0,  2.0;
+    controlParameters.poseErrorWeight << 2000.0,    0.0,  0.0,
+                                            0.0, 2000.0, -0.0,
+                                            0.0,  -0.0,   5.0;
+    
+    SolverOptions<double> solverOptions;                                                            // Not currently being used
     
     RobotLibrary::Control::DifferentialDrivePredictive controller(modelParameters,
                                                                   controlParameters,
                                                                   solverOptions);
  
-    RobotLibrary::Model::Pose2D actualPose(-0.0, 0.0, 0.0);                                         // Start offset from the trajectory
+    RobotLibrary::Model::Pose2D actualPose(-0.1, 0.1, 0.0);                                          // Start offset from the trajectory
     
     Eigen::Vector2d controlInput = {0.0, 0.0};
     
     controller.update_state(actualPose, controlInput);
     
     // Set up obstacle(s)
-    std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(predictionSteps);           // Must match the length of the prediction horizon
-    
-    double xSemiAxis = 0.25;
-    double ySemiAxis = 0.25;
-    Eigen::Matrix2d shapeMatrix; shapeMatrix << xSemiAxis * xSemiAxis, 0.0,
-                                                                  0.0, ySemiAxis * ySemiAxis; 
-    Eigen::Vector2d centre = {0.58, 0.25};
-    
-    /*
-    for (int j = 0; j < predictionSteps + 1; ++j)
+    std::vector<std::vector<RobotLibrary::Model::Obstacle2D>> obstacles(predictionSteps+1);           // MUST be N+1
+
+    for (int i = 0; i < predictionSteps+1; ++i)
     {
-        obstacles[0].emplace_back(RobotLibrary::Math::Ellipsoid<2>(centre, shapeMatrix));
-    }*/
-       
+        // NOTE: We need N+1 here since for u[0], ... , u[N-1], and x[1], ... , x[N]
+        // NOTE: We require the unique_ptr for polymorphism
+        
+        auto line = std::make_unique<RobotLibrary::Math::Line2D>(Eigen::Vector2d(0.0, 1.0));        // Create line
+        
+        obstacles[i].push_back(RobotLibrary::Model::Obstacle2D(std::move(line)));                   // Move it in to the obstacle vector
+        
+        obstacles[i].back().update_state(RobotLibrary::Model::Pose2D(0.501, 0.0, 0.0), Eigen::Vector3d::Zero()); // Translate in x direction
+    }
+
     // Set up data arrays for analysis
     std::vector<std::array<double,3>> desiredConfiguration;  desiredConfiguration.resize(simulationSteps);
     std::vector<std::array<double,3>> actualConfiguration;   actualConfiguration.resize(simulationSteps);
@@ -96,10 +96,9 @@ int main(int argc, char **argv)
     // Run the simulation
     for (int i = 0; i < simulationSteps; ++i)
     {
-        double simTime = i / controlFrequency;
+        double simTime = i / controlFrequency;                                                      // Dividing is more numerically stable
         
-        // Query the desired state from the trajectory across the control horizon
-        std::vector<RobotLibrary::Model::DifferentialDriveState> desiredStates;
+        std::vector<RobotLibrary::Model::DifferentialDriveState> desiredStates;                     // Query the desired state from the trajectory across the control horizon
         
         for (int j = 0; j <= predictionSteps; ++j)
         {
