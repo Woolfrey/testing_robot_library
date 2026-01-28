@@ -116,7 +116,7 @@ ax1.spines['top'].set_visible(False)
 ax1.spines['right'].set_visible(False)
 fig1.canvas.manager.set_window_title("Cartesian Path")
 
-"""
+
 ####################################################################################################
 #                                         CONTROL INPUTS                                           #
 ####################################################################################################
@@ -198,7 +198,7 @@ ax3_2.tick_params(axis='x', which='both', bottom=True, labelbottom=True)
 
 # Window title
 fig3.canvas.manager.set_window_title("Tracking Error")
-"""
+
 
 plt.tight_layout()
 plt.show()

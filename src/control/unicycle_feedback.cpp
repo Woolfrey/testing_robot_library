@@ -47,11 +47,11 @@ int main(int argc, char **argv)
     
     modelParameters.inertia                = mass * radius * radius / 2.0;                          // Rotational inertia (kg*m^2)
     modelParameters.mass                   = mass;                                                  // Weight (kg)
-    modelParameters.maxAngularAcceleration = 0.5;                                                   // Maximum rotational acceleration (rad/s/s)
+    modelParameters.maxAngularAcceleration = 1.0;                                                   // Maximum rotational acceleration (rad/s/s)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
     modelParameters.maxLinearAcceleration  = 1.0;                                                   // Maximum forward acceleration (m/s/s)
     modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
-    modelParameters.minimumSafeDistance    = 1e-08;                                                // Make it the same as the robot
+    modelParameters.minimumSafeDistance    = 1e-10;                                                   // Make it the same as the robot
     modelParameters.propagationUncertainty = Matrix3d::Identity();                                  // Uncertainty of configuration propagation in Kalman filter
     
     // Parameters for the feedback controller
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
     {
         auto ellipse = std::make_unique<Math::Ellipse>(shapeMatrix);                                // Underlying shape
         obstacles[i].push_back(Model::Obstacle2D(std::move(ellipse)));
-        obstacles[i].back().update_state(Model::Pose2D(-0.3, 0.75, 0.0));
+        obstacles[i].back().update_state(Model::Pose2D(-0.3, 0.70, 0.0));
         obstacles[i].back().set_name("ellipse_01");
     }
     
