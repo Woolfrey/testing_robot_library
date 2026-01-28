@@ -52,8 +52,8 @@ target_link_libraries(joint_velocity_control PRIVATE RobotLibrary::RobotLibrary)
 add_executable(cartesian_velocity_control src/control/cartesian_velocity_control.cpp)
 target_link_libraries(cartesian_velocity_control PRIVATE RobotLibrary::RobotLibrary)
 
-add_executable(differential_drive_feedback src/control/differential_drive_feedback.cpp)
-target_link_libraries(differential_drive_feedback PRIVATE RobotLibrary::RobotLibrary)
+add_executable(unicycle_feedback src/control/unicycle_feedback.cpp)
+target_link_libraries(unicycle_feedback PRIVATE RobotLibrary::RobotLibrary)
 
-add_executable(differential_drive_predictive src/control/differential_drive_predictive.cpp)
-target_link_libraries(differential_drive_predictive PRIVATE RobotLibrary::RobotLibrary)
+add_executable(unicycle_predictive src/control/unicycle_predictive.cpp)
+target_link_libraries(unicycle_predictive PRIVATE RobotLibrary::RobotLibrary)
