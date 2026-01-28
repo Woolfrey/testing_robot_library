@@ -22,6 +22,8 @@ int main(int argc, char **argv)
     {
         RobotLibrary::Model::KinematicTree model(pathToURDF);
         
+        std::cout << "The model base link is '" << model.base_name() << "'\n";
+        
         int numJoints = model.number_of_joints();
 
         clock_t timer;
