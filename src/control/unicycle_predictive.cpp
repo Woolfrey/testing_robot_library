@@ -61,7 +61,7 @@ int main(int argc, char **argv)
     controlParameters.exponent                = 1e-03;                                              // Growth or decay of pose error weighting
     controlParameters.maximumControlStepNorm  = 1e-03;                                              // DDP algorithm terminates early if max. ||du|| is smaller than this
     controlParameters.numberOfRecursions      = 50;                                                 // No. of forward & backward passes for the DDP algorithm
-    controlParameters.obstaclePotentialScalar = 2e-02;                                              // Scales the repulsion force
+    controlParameters.obstaclePotentialScalar = 5e-02;                                              // Scales the repulsion force
     controlParameters.predictionSteps         = predictionSteps;                                    // Length of prediction horizon
   
     controlParameters.poseErrorWeight <<   1.0,    0.0,    0.0,
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
                 auto ellipse = std::make_unique<Math::Ellipse>(shapeMatrix);
                 
                 obstacles[i][j].push_back(Model::Obstacle2D(std::move(ellipse)));
-                obstacles[i][j].back().update_state(Model::Pose2D(-0.4,0.8, 0.0));
+                obstacles[i][j].back().update_state(Model::Pose2D(-0.4,0.9, 0.0));
                 obstacles[i][j].back().set_name("ellipse_" + std::to_string(k+1));
             }
         }
