@@ -19,7 +19,7 @@
 #include <RobotLibrary/Control/UnicycleFeedback.h>
 #include <RobotLibrary/Math/Ellipsoid.h>
 #include <RobotLibrary/Model/Pose2D.h>
-#include <RobotLibrary/Trajectory/MinimumArcLength.h>
+#include <RobotLibrary/Trajectory/HermiteTrajectory.h>
 
 // Simulation parameters
 double controlFrequency  = 100;
@@ -34,8 +34,8 @@ int main(int argc, char **argv)
     
     // Set up the trajectory
     Model::Pose2D startPose(0.0, 0.0, 0.0);
-    Vector2d endPoint = {-1.0, 1.0};
-    Trajectory::MinimumArcLength trajectory(startPose, endPoint, 1.0, simulationTime - 1.0);
+    Model::Pose2D endPose(1.0, 1.0, 0.0);
+    Trajectory::HermiteTrajectory trajectory(startPose, endPose, 1.0, simulationTime - 1.0);
     
     // Parameters for the model
     Model::UnicycleParameters modelParameters; 
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
     modelParameters.maxAngularVelocity     = 100.0 * M_PI / 30.0;                                   // Maximum rotational speed (rad/s)
     modelParameters.maxLinearAcceleration  = 1.0;                                                   // Maximum forward acceleration (m/s/s)
     modelParameters.maxLinearVelocity      = 2.0;                                                   // Maximum forward speed (m/s)
-    modelParameters.minimumSafeDistance    = 1e-10;                                                   // Make it the same as the robot
+    modelParameters.minimumSafeDistance    = 1e-10;                                                 // Make it the same as the robot
     modelParameters.propagationUncertainty = Matrix3d::Identity();                                  // Uncertainty of configuration propagation in Kalman filter
     
     // Parameters for the feedback controller
@@ -60,8 +60,8 @@ int main(int argc, char **argv)
     controlParameters.controlFrequency    = controlFrequency;
     controlParameters.minimumSafeDistance = 1e-06;
     controlParameters.orientationGain     = 10.0;
-    controlParameters.xPositionGain       = 20.0;
-    controlParameters.yPositionGain       = 40.0;
+    controlParameters.xPositionGain       = 1.0;
+    controlParameters.yPositionGain       = 50;
     
     controlParameters.qpSolver.stepSizeTolerance = 1e-04;                                           // Needs to be very small for this low dimensional problem
 
@@ -71,8 +71,8 @@ int main(int argc, char **argv)
     double rx = 0.1;
     double ry = 0.1;
     Matrix2d shapeMatrix;
-    shapeMatrix << rx*rx, 0.0,
-                     0.0, ry*ry;                                                                    // Defines shape of ellipse
+    shapeMatrix << rx * rx, 0.0,
+                       0.0, ry * ry;                                                                // Defines shape of ellipse
     
     std::vector<std::vector<Model::Obstacle2D>> obstacles(simulationSteps);                         // Container
     
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
     {
         auto ellipse = std::make_unique<Math::Ellipse>(shapeMatrix);                                // Underlying shape
         obstacles[i].push_back(Model::Obstacle2D(std::move(ellipse)));
-        obstacles[i].back().update_state(Model::Pose2D(-0.3, 0.70, 0.0));
+        obstacles[i].back().update_state(Model::Pose2D(0.6, 0.40, 0.0));
         obstacles[i].back().set_name("ellipse_01");
     }
     
@@ -98,19 +98,19 @@ int main(int argc, char **argv)
     { 
         double simTime = i / controlFrequency;
         
-        // Query the desired state from the trajectory generator
-        const auto &[desiredConfiguration,
-                     desiredVelocity,
-                     desiredAcceleration] = trajectory.query_state(simTime);                        // Get the desired state
-                     
-        Model::Pose2D desiredPose(desiredConfiguration[0],
-                                  desiredConfiguration[1],
-                                  desiredConfiguration[2]);                                         // We need to put it in a Pose2D object
-        
-        // NOTE: QP solver can throw an error if no solution exists.
+        Trajectory::PlanarState planarState = trajectory.query_state(simTime);                      // Query desired state for given time
+
+        // Convert to Unicycle kinematics
+        Model::UnicycleState desiredState;
+        desiredState.pose = planarState.pose;
+        double angle = planarState.pose.angle();
+        desiredState.velocity = {planarState.twist[0] * cos(angle) + planarState.twist[1] * sin(angle),
+                                 planarState.twist[2]};
+
+        // NOTE:Solver can throw an error if no solution exists.
         try
         {  
-            controlInput = controller.track_trajectory(desiredPose, desiredVelocity, obstacles[i]);
+            controlInput = controller.track_trajectory(desiredState.pose, desiredState.velocity, obstacles[i]);
         }
         catch (const std::exception &exception)
         {
@@ -120,7 +120,7 @@ int main(int argc, char **argv)
         }
         
         // Save data for analysis
-        desiredStates[i] = Model::UnicycleState{desiredPose, desiredVelocity};
+        desiredStates[i] = desiredState;
         actualStates[i]  = Model::UnicycleState{actualPose, controlInput};
 
         // Update for next loop

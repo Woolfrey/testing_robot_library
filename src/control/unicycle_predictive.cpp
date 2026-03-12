@@ -19,7 +19,7 @@
 #include <RobotLibrary/Control/UnicyclePredictive.h>
 #include <RobotLibrary/Math/Line.h>
 #include <RobotLibrary/Model/Pose2D.h>
-#include <RobotLibrary/Trajectory/MinimumArcLength.h>
+#include <RobotLibrary/Trajectory/HermiteTrajectory.h>
 
 // Simulation parameters
 double simulationTime   =  20.0;
@@ -35,8 +35,8 @@ int main(int argc, char **argv)
     
     // Set up the trajectory
     Model::Pose2D startPose(0.0, 0.0, 0.0);
-    Vector2d endPoint = {-1.0, 1.0};
-    Trajectory::MinimumArcLength trajectory(startPose, endPoint, 1.0, simulationTime - 1.0);
+    Model::Pose2D endPose(1.0, 1.0, 0.0);
+    Trajectory::HermiteTrajectory trajectory(startPose, endPose, 1.0, simulationTime - 1.0);
     
     // Parameters for the model
     Model::UnicycleParameters modelParameters; 
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
                 auto ellipse = std::make_unique<Math::Ellipse>(shapeMatrix);
                 
                 obstacles[i][j].push_back(Model::Obstacle2D(std::move(ellipse)));
-                obstacles[i][j].back().update_state(Model::Pose2D(-0.4,0.9, 0.0));
+                obstacles[i][j].back().update_state(Model::Pose2D(0.6,0.5, 0.0));
                 obstacles[i][j].back().set_name("ellipse_" + std::to_string(k+1));
             }
         }
@@ -114,13 +114,20 @@ int main(int argc, char **argv)
 
         for (int j = 0; j <= predictionSteps; ++j)
         {
-            const auto &[pos, vel, acc] = trajectory.query_state(simTime + j / controlFrequency);   // Sample the trajectory across the horizon
-         
-            Model::UnicycleState state(Model::Pose2D(pos[0], pos[1], pos[2]), vel);                 // We need to put it in a data structure
+            Trajectory::PlanarState planarState = trajectory.query_state(simTime + j / controlFrequency); // Sample trajectory
             
-            desiredStates[i].push_back(state);                                                      // Append
-        }
+            Model::UnicycleState desiredState;                                                      // Need to convert
+            
+            desiredState.pose = planarState.pose;                                                   // Pose is the same
+            
+            double angle = planarState.pose.angle();
+            
+            desiredState.velocity = {planarState.twist[0] * cos(angle) + planarState.twist[1] * sin(angle),
+                                     planarState.twist[2]};                                         // Need to convert to [v, w]
 
+            desiredStates[i].push_back(desiredState);                                               // Append to list
+        }
+        
         try
         {
             controlInput = controller.track_trajectory(desiredStates[i], obstacles[i]);             // Solve the predictive control problem
